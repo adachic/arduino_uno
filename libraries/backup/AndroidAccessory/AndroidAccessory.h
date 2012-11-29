@@ -17,12 +17,7 @@
 #ifndef __AndroidAccessory_h__
 #define __AndroidAccessory_h__
 
-#if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
-
 
 class AndroidAccessory {
 private:

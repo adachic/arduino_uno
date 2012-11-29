@@ -1,4 +1,23 @@
 /*
+  Copyright 2012 ADK Study Group Tokyo
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+  Changes: 
+    Fix for the Arduino IDE version compatibility.
+
+ -----------------------------------------------------------------------------------
+ *
  * Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com
  * MAX3421E USB host controller support
  *
@@ -35,7 +54,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
+#else
+#include "WProgram.h"
+#endif
 
 // When the display powers up, it is configured as follows:
 //
@@ -66,15 +89,15 @@
 #define CLR_E   lcdPins &= ~E
 
 #define SENDlcdPins()   MAX3421E::gpioWr( lcdPins )
-
+    
 #define LCD_sendcmd(a)  {   CLR_RS;             \
                             sendbyte(a);    \
                         }
-
+ 
 #define LCD_sendchar(a) {   SET_RS;             \
                             sendbyte(a);    \
                         }
-
+                            
 static byte lcdPins;    //copy of LCD pins
 
 Max_LCD::Max_LCD()
@@ -86,10 +109,10 @@ Max_LCD::Max_LCD()
 void Max_LCD::init()
 {
     _displayfunction = LCD_4BITMODE | LCD_1LINE | LCD_5x8DOTS;
-
+ 
  //   MAX3421E::gpioWr(0x55);
-
-  begin(16, 1);
+ 
+  begin(16, 1);  
 }
 
 void Max_LCD::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
@@ -136,10 +159,10 @@ void Max_LCD::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
     SENDlcdPins();
     delayMicroseconds(10000);
   // finally, set # lines, font size, etc.
-  command(LCD_FUNCTIONSET | _displayfunction);
+  command(LCD_FUNCTIONSET | _displayfunction);  
 
   // turn the display on with no cursor or blinking default
-  _displaycontrol = LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF;
+  _displaycontrol = LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF;  
   display();
 
   // clear it off
@@ -170,7 +193,7 @@ void Max_LCD::setCursor(uint8_t col, uint8_t row)
   if ( row > _numlines ) {
     row = _numlines-1;    // we count rows starting w/0
   }
-
+ 
   command(LCD_SETDDRAMADDR | (col + row_offsets[row]));
 }
 
@@ -253,8 +276,11 @@ inline void Max_LCD::command(uint8_t value) {
   LCD_sendcmd(value);
   delayMicroseconds(100);
 }
-
+#if defined(ARDUINO) && ARDUINO >= 100
 inline size_t Max_LCD::write(uint8_t value) {
+#else
+inline void Max_LCD::write(uint8_t value) {
+#endif
   LCD_sendchar(value);
 }
 
@@ -264,14 +290,14 @@ void Max_LCD::sendbyte( uint8_t val )
     lcdPins |= ( val & 0xf0 );      //copy upper nibble to LCD variable
     SET_E;                          //send
     SENDlcdPins();
-    delayMicroseconds(2);
+    delayMicroseconds(2);  
     CLR_E;
     delayMicroseconds(2);
     SENDlcdPins();
     lcdPins &= 0x0f;                    //prepare place for the lower nibble
     lcdPins |= ( val << 4 ) & 0xf0;    //copy lower nibble to LCD variable
     SET_E;                              //send
-    SENDlcdPins();
+    SENDlcdPins();  
     CLR_E;
     SENDlcdPins();
     delayMicroseconds(100);

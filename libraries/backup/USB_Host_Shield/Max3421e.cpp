@@ -1,29 +1,4 @@
 /*
-  Copyright 2012 ADK Study Group Tokyo
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-
-  Changes: 
-    *Fix for the Arduino IDE version compatibility.
-    *Fix for the Arduino Leonardo support.
-    Supoort ADK boards
-      Google ADK compatible boards(RT-ADK, Arduino MegaADK)
-      Duemilanove/UNO + Sparkfun USB Host Shield(DEV-09947)
-      Duemilanove/UNO + USB Host Shield 2.0
-      Pro mini + USB Host Shield for Arduino Pro Mini
-      Leonardo + USB Host Shield 2.0
-
- -----------------------------------------------------------------------------------
  * Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com
  * MAX3421E USB host controller support
  *
@@ -61,17 +36,70 @@ static byte vbusState;
 
 /* Functions    */
 
+#if defined(__AVR_ATmega1280__) || (__AVR_ATmega2560__)
+
+#define INT             PE6
+#define INT_PORT        PORTE
+#define INT_DDR         DDRE
+#define INT_PIN         PINE
+
+#define RST             PJ2
+#define RST_PORT        PORTJ
+#define RST_DDR         DDRJ
+#define RST_PIN         PINJ
+
+#define GPX             PJ3
+#define GPX_PORT        PORTJ
+#define GPX_DDR         DDRJ
+#define GPX_PIN         PINJ
+
+#endif
+
+#if  defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__)
+
+#define INT             1
+#define INT_PORT        PORTB
+#define INT_DDR         DDRB
+#define INT_PIN         PINB
+
+#define RST             7
+#define RST_PORT        PORTD
+#define RST_DDR         DDRD
+#define RST_PIN         PIND
+
+#define GPX             0
+#define GPX_PORT        PORTB
+#define GPX_DDR         DDRB
+#define GPX_PIN         PINB
+
+#endif
+
+void MAX3421E::setRST(uint8_t val)
+{
+	if (val == LOW)
+		RST_PORT &= ~_BV(RST);
+	else
+		RST_PORT |= _BV(RST);
+}
+
+uint8_t MAX3421E::readINT(void)
+{
+	return INT_PIN & _BV(INT) ? HIGH : LOW;
+}
+
+uint8_t MAX3421E::readGPX(void)
+{
+	// return GPX_PIN & _BV(GPX) ? HIGH : LOW;
+	return LOW;
+}
+
+
 void MAX3421E::pinInit(void)
 {
-	//Reset pin mode = OUT
-	setRSTPIN();
-
-	// Pull SPI !SS high
-	setSSPIN();
-	set_SS(1);
-
-	// Reset
-	setRST(1);
+	INT_DDR &= ~_BV(INT);
+	RST_DDR |= _BV(RST);
+	digitalWrite(MAX_SS,HIGH);   
+	setRST(HIGH);
 }
 
 
@@ -113,19 +141,19 @@ byte MAX3421E::getVbusState( void )
 /* Single host register write   */
 void MAX3421E::regWr( byte reg, byte val)
 {
-      set_SS(LOW);
+      digitalWrite(MAX_SS,LOW);
       SPDR = ( reg | 0x02 );
       while(!( SPSR & ( 1 << SPIF )));
       SPDR = val;
       while(!( SPSR & ( 1 << SPIF )));
-      set_SS(HIGH);
+      digitalWrite(MAX_SS,HIGH);
       return;
 }
 /* multiple-byte write */
 /* returns a pointer to a memory position after last written */
 char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
 {
-    set_SS(LOW);
+    digitalWrite(MAX_SS,LOW);
     SPDR = ( reg | 0x02 );
     while( nbytes-- ) {
       while(!( SPSR & ( 1 << SPIF )));  //check if previous byte was sent
@@ -133,7 +161,7 @@ char * MAX3421E::bytesWr( byte reg, byte nbytes, char * data )
       data++;                         // advance data pointer
     }
     while(!( SPSR & ( 1 << SPIF )));
-    set_SS(HIGH);
+    digitalWrite(MAX_SS,HIGH);
     return( data );
 }
 /* GPIO write. GPIO byte is split between 2 registers, so two writes are needed to write one byte */
@@ -151,19 +179,19 @@ void MAX3421E::gpioWr( byte val )
 byte MAX3421E::regRd( byte reg )    
 {
   byte tmp;
-    set_SS(LOW);
+    digitalWrite(MAX_SS,LOW);
     SPDR = reg;
     while(!( SPSR & ( 1 << SPIF )));
     SPDR = 0; //send empty byte
     while(!( SPSR & ( 1 << SPIF )));
-    set_SS(HIGH); 
+    digitalWrite(MAX_SS,HIGH); 
     return( SPDR );
 }
 /* multiple-bytes register read                             */
 /* returns a pointer to a memory position after last read   */
 char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
 {
-    set_SS(LOW);
+    digitalWrite(MAX_SS,LOW);
     SPDR = reg;      
     while(!( SPSR & ( 1 << SPIF )));    //wait
     while( nbytes ) {
@@ -173,7 +201,7 @@ char * MAX3421E::bytesRd ( byte reg, byte nbytes, char  * data )
       *data = SPDR;
       data++;
     }
-    set_SS(HIGH);
+    digitalWrite(MAX_SS,HIGH);
     return( data );   
 }
 /* GPIO read. See gpioWr for explanation */
@@ -189,11 +217,11 @@ byte MAX3421E::gpioRd( void )
 /* reset MAX3421E using chip reset bit. SPI configuration is not affected   */
 boolean MAX3421E::reset()
 {
-  word tmp = 0;
+  byte tmp = 0;
     regWr( rUSBCTL, bmCHIPRES );                        //Chip reset. This stops the oscillator
     regWr( rUSBCTL, 0x00 );                             //Remove the reset
     while(!(regRd( rUSBIRQ ) & bmOSCOKIRQ )) {          //wait until the PLL is stable
-        tmp++;                                          //timeout after 65536 attempts
+        tmp++;                                          //timeout after 256 attempts
         if( tmp == 0 ) {
             return( false );
         }

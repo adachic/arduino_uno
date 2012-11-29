@@ -1,22 +1,4 @@
 /*
-  Copyright 2012 ADK Study Group Tokyo
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-
-  Changes: 
-    Fix for the Arduino IDE version compatibility.
-
- -----------------------------------------------------------------------------------
  * Copyright 2009-2011 Oleg Mazurov, Circuits At Home, http://www.circuitsathome.com
  * MAX3421E USB host controller support
  *
@@ -115,12 +97,8 @@ public:
   void autoscroll();
   void noAutoscroll();
   void createChar(uint8_t, uint8_t[]);
-  void setCursor(uint8_t, uint8_t); 
-#if defined(ARDUINO) && ARDUINO >= 100
+  void setCursor(uint8_t, uint8_t);
   virtual size_t write(uint8_t);
-#else
-  virtual void write(uint8_t);
-#endif
   void command(uint8_t);
 private:
   void sendbyte( uint8_t val );

@@ -19,7 +19,7 @@ void setup()
   Serial.println("Start");
   //デジタル入出力を初期化。13を出力にする。
  // delay(100);
-//  pinMode(13, OUTPUT);
+  pinMode(3, OUTPUT);
   //digitalWrite(LED_PIN, HIGH);
   //ADK init, boot
   delay(100);
@@ -48,11 +48,11 @@ void loop()
       if(buf[0] == LED_COMMAND){
         switch(buf[1]){
           case LED_OFF:
-            digitalWrite(LED_PIN, LOW);
+            digitalWrite(3, LOW);
             Serial.println("OFF");
             break;
           case LED_ON:
-            digitalWrite(LED_PIN, HIGH);
+            digitalWrite(3, HIGH);
             Serial.println("ON");
             break;
           default:
