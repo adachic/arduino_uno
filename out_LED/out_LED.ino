@@ -2,7 +2,10 @@
 #include <AndroidAccessory.h>
 
 #define LED_PIN     13
-#define LED_COMMAND 0x10
+
+#define MOVE_UP      0x10
+#define CAMERA_LEFT  0x11
+#define CAMERA_RIGHT 0x12
 #define LED_OFF     0x00
 #define LED_ON      0x01
 
@@ -19,7 +22,10 @@ void setup()
   Serial.println("Start");
   //デジタル入出力を初期化。13を出力にする。
  // delay(100);
-  pinMode(3, OUTPUT);
+  pinMode(3, OUTPUT);//move up
+  pinMode(4, OUTPUT);//camera left
+  pinMode(5, OUTPUT);//camera right
+  pinMode(6, OUTPUT);
   //digitalWrite(LED_PIN, HIGH);
   //ADK init, boot
   delay(100);
@@ -45,18 +51,46 @@ void loop()
       Serial.print(" , value: ");
       Serial.println(buf[1]);    
       
-      if(buf[0] == LED_COMMAND){
+      if(buf[0] == MOVE_UP){
         switch(buf[1]){
           case LED_OFF:
             digitalWrite(3, LOW);
-            Serial.println("OFF");
+            Serial.println("3OFF");
             break;
           case LED_ON:
             digitalWrite(3, HIGH);
-            Serial.println("ON");
+            Serial.println("3ON");
             break;
           default:
-            Serial.println("ETC");
+            Serial.println("3ETC");
+            break;
+        }
+      }else if(buf[0] == CAMERA_LEFT){
+        switch(buf[1]){
+          case LED_OFF:
+            digitalWrite(4, LOW);
+            Serial.println("4OFF");
+            break;
+          case LED_ON:
+            digitalWrite(4, HIGH);
+            Serial.println("4ON");
+            break;
+          default:
+            Serial.println("4ETC");
+            break;
+        }
+      }else if(buf[0] == CAMERA_RIGHT){
+        switch(buf[1]){
+          case LED_OFF:
+            digitalWrite(5, LOW);
+            Serial.println("5OFF");
+            break;
+          case LED_ON:
+            digitalWrite(5, HIGH);
+            Serial.println("5ON");
+            break;
+          default:
+            Serial.println("5ETC");
             break;
         }
       }
